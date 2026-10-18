@@ -80,12 +80,20 @@ pub fn approve_mode() -> ApproveMode {
         ApproveMode::Password
     } else if mode == "click" {
         ApproveMode::Click
-    } else {
+    } else if mode == "password-click" || mode == "both" {
         ApproveMode::Both
+    } else {
+        // NexDesk: every session needs a click on the host unless the device owner
+        // deliberately chose password (unattended) access.
+        ApproveMode::Click
     }
 }
 
 pub fn hide_cm() -> bool {
+    // NexDesk: the connection manager (session indicator + disconnect) is never hidden.
+    if true {
+        return false;
+    }
     approve_mode() == ApproveMode::Password
         && verification_method() == VerificationMethod::OnlyUsePermanentPassword
         && crate::config::option2bool("allow-hide-cm", &Config::get_option("allow-hide-cm"))

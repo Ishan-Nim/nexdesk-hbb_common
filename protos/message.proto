@@ -38,6 +38,9 @@ message VideoFrame {
 message IdPk {
   string id = 1;
   bytes pk = 2;
+  // NexDesk: the host's long-term Ed25519 public key, sent on direct-IP connections so
+  // the controller can verify the signature and pin the host key (trust on first use).
+  bytes sign_pk = 3;
 }
 
 message DisplayInfo {
