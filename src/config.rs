@@ -69,7 +69,7 @@ lazy_static::lazy_static! {
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
     pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
     pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned());
+    pub static ref APP_NAME: RwLock<String> = RwLock::new("NexDesk".to_owned());
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
@@ -97,8 +97,8 @@ lazy_static::lazy_static! {
     pub static ref APP_HOME_DIR: RwLock<String> = Default::default();
 }
 
-pub const LINK_DOCS_HOME: &str = "https://rustdesk.com/docs/en/";
-pub const LINK_DOCS_X11_REQUIRED: &str = "https://rustdesk.com/docs/en/manual/linux/#x11-required";
+pub const LINK_DOCS_HOME: &str = "https://github.com/Ishan-Nim/nexdesk/tree/main/docs";
+pub const LINK_DOCS_X11_REQUIRED: &str = "https://github.com/Ishan-Nim/nexdesk/blob/main/docs/install-linux.md#x11-required";
 pub const LINK_HEADLESS_LINUX_SUPPORT: &str =
     "https://github.com/rustdesk/rustdesk/wiki/Headless-Linux-Support";
 
@@ -117,8 +117,12 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];
-pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";
+// NexDesk: no built-in rendezvous/relay server and no built-in server key. Without a
+// customer-configured ID server the client runs in direct-IP mode only and never contacts
+// a vendor endpoint. Customer servers are set via the "custom-rendezvous-server",
+// "relay-server" and "key" options.
+pub const RENDEZVOUS_SERVERS: &[&str] = &[];
+pub const RS_PUB_KEY: &str = "";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -946,7 +950,9 @@ impl Config {
         if !s.is_empty() {
             return vec![s];
         }
-        let serial_obsolute = CONFIG2.read().unwrap().serial > SERIAL;
+        // NexDesk: ignore server-pushed "rendezvous-servers" lists; only explicit
+        // customer configuration (above) selects a server.
+        let serial_obsolute = false;
         if serial_obsolute {
             let ss: Vec<String> = Self::get_option("rendezvous-servers")
                 .split(',')

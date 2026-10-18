@@ -187,19 +187,14 @@ pub fn is_ipv4(target: &TargetAddr<'_>) -> bool {
 
 #[inline]
 pub async fn query_nip_io(addr: &SocketAddr) -> ResultType<SocketAddr> {
-    tokio::net::lookup_host(format!("{}.nip.io:{}", addr.ip(), addr.port()))
-        .await?
-        .find(|x| x.is_ipv6())
-        .context("Failed to get ipv6 from nip.io")
+    // NexDesk: the upstream NAT64 helper resolves "<ipv4>.nip.io", a third-party DNS
+    // service. Disabled; IPv6-only hosts must reach IPv4 peers through their own NAT64/DNS64.
+    anyhow::bail!("IPv4 target {addr} unreachable from IPv6-only local address (nip.io lookup disabled)")
 }
 
 #[inline]
-pub fn ipv4_to_ipv6(addr: String, ipv4: bool) -> String {
-    if !ipv4 && crate::is_ipv4_str(&addr) {
-        if let Some(ip) = addr.split(':').next() {
-            return addr.replace(ip, &format!("{ip}.nip.io"));
-        }
-    }
+pub fn ipv4_to_ipv6(addr: String, _ipv4: bool) -> String {
+    // NexDesk: never rewrite to "<ipv4>.nip.io" (third-party DNS); see query_nip_io.
     addr
 }
 
@@ -284,29 +279,13 @@ mod tests {
 
     #[tokio::main(flavor = "current_thread")]
     async fn test_nat64_async() {
+        // NexDesk: addresses are never rewritten to nip.io and no lookup is made.
         assert_eq!(ipv4_to_ipv6("1.1.1.1".to_owned(), true), "1.1.1.1");
-        assert_eq!(ipv4_to_ipv6("1.1.1.1".to_owned(), false), "1.1.1.1.nip.io");
+        assert_eq!(ipv4_to_ipv6("1.1.1.1".to_owned(), false), "1.1.1.1");
         assert_eq!(
             ipv4_to_ipv6("1.1.1.1:8080".to_owned(), false),
-            "1.1.1.1.nip.io:8080"
+            "1.1.1.1:8080"
         );
-        assert_eq!(
-            ipv4_to_ipv6("rustdesk.com".to_owned(), false),
-            "rustdesk.com"
-        );
-        if ("rustdesk.com:80")
-            .to_socket_addrs()
-            .unwrap()
-            .next()
-            .unwrap()
-            .is_ipv6()
-        {
-            assert!(query_nip_io(&"1.1.1.1:80".parse().unwrap())
-                .await
-                .unwrap()
-                .is_ipv6());
-            return;
-        }
         assert!(query_nip_io(&"1.1.1.1:80".parse().unwrap()).await.is_err());
     }
 
